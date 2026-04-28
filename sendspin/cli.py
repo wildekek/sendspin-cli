@@ -306,6 +306,12 @@ def _build_parser() -> argparse.ArgumentParser:
         default=[],
         help="Client URL to connect to (can be specified multiple times)",
     )
+    serve_parser.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="Number of server worker processes (default: 1)",
+    )
 
     # Daemon subcommand
     daemon_parser = subparsers.add_parser(
@@ -581,7 +587,7 @@ def _resolve_preferred_format(
 
 async def _run_serve_mode(args: argparse.Namespace) -> int:
     """Run the server mode."""
-    from sendspin.serve import ServeConfig, run_server
+    from sendspin.serve import ServeConfig, run_server, run_server_multi
 
     # Load settings for serve mode
     settings = await get_serve_settings()
@@ -617,6 +623,17 @@ async def _run_serve_mode(args: argparse.Namespace) -> int:
         name=args.name,
         clients=args.clients or settings.clients,
     )
+    if args.workers < 1:
+        print("Error: --workers must be at least 1")
+        return 1
+
+    if args.workers > 1 and serve_config.clients:
+        print("Error: --client is not supported with --workers")
+        return 1
+
+    if args.workers > 1:
+        return await run_server_multi(serve_config, workers=args.workers, log_level=args.log_level)
+
     return await run_server(serve_config)
 
 
