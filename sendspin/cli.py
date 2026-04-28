@@ -201,6 +201,16 @@ def _add_player_runtime_options(target: ArgumentTarget, *, suppress_defaults: bo
         default=default,
         help="Command to run when audio stream stops (receives SENDSPIN_* env vars)",
     )
+    target.add_argument(
+        "--interface",
+        type=str,
+        default=default,
+        help=(
+            "IP address of the network interface to use for mDNS discovery. "
+            "Restricts discovery to servers on the specified interface only. "
+            "Useful when the system has multiple interfaces (e.g., LAN and WAN)."
+        ),
+    )
 
 
 def _add_player_actions(target: ArgumentTarget, *, suppress_defaults: bool = False) -> None:
@@ -425,6 +435,17 @@ def _build_parser() -> argparse.ArgumentParser:
         type=str,
         default=None,
         help="Product name reported in the client hello (defaults to auto-detected OS/platform name)",
+    )
+    daemon_parser.add_argument(
+        "--interface",
+        type=str,
+        default=None,
+        help=(
+            "IP address of the network interface to bind to. "
+            "In server-initiated mode (no --url), restricts the listening server to this "
+            "interface only. Also restricts mDNS discovery to this interface. "
+            "Useful when the system has multiple interfaces (e.g., LAN and WAN)."
+        ),
     )
 
     # audio-devices subcommand
@@ -663,6 +684,7 @@ async def _run_daemon_mode(
         hook_stop=args.hook_stop,
         manufacturer=args.manufacturer,
         product_name=args.product_name,
+        interface=args.interface,
     )
 
     daemon = SendspinDaemon(daemon_args)
@@ -792,6 +814,8 @@ async def _run_client_mode(args: argparse.Namespace) -> int:
         args.manufacturer = settings.manufacturer
     if args.product_name is None:
         args.product_name = settings.product_name
+    if args.interface is None:
+        args.interface = settings.interface
 
     # Set up logging: daemon uses stderr, TUI writes to sendspin.log
     # so log output doesn't interfere with the Rich display.
@@ -857,6 +881,7 @@ async def _run_client_mode(args: argparse.Namespace) -> int:
         hook_stop=args.hook_stop,
         manufacturer=args.manufacturer,
         product_name=args.product_name,
+        interface=args.interface,
     )
 
     app = SendspinApp(app_args)
