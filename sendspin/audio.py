@@ -330,6 +330,19 @@ class AudioPlayer:
         self._close_stream()
         self._stream_executor.shutdown(wait=True)
 
+    def close_stream(self) -> None:
+        """Drop queued audio and fully close the stream to release the device.
+
+        Unlike clear(), which only stops the stream (leaving the device FD open),
+        this fully closes the PortAudio stream. Call when the server signals
+        end-of-stream; the stream will be recreated by set_format() when the
+        next track begins.
+        """
+        if self._closed:
+            return
+        self.clear()
+        self._close_stream()
+
     def clear(self) -> None:
         """Drop all queued audio chunks."""
         if self._closed:
